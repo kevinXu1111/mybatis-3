@@ -29,7 +29,7 @@ public class PropertyParser {
    * <p>
    *   The default value is {@code false} (indicate disable a default value on placeholder)
    *   If you specify the {@code true}, you can specify key and default value on placeholder (e.g. {@code ${db.username:postgres}}).
-   * </p>
+   * </p>在myabtis-config.xml中properties节点下配置是否开启默认值功能的对应配置项
    * @since 3.4.2
    */
   public static final String KEY_ENABLE_DEFAULT_VALUE = KEY_PREFIX + "enable-default-value";
@@ -38,13 +38,13 @@ public class PropertyParser {
    * The special property key that specify a separator for key and default value on placeholder.
    * <p>
    *   The default separator is {@code ":"}.
-   * </p>
+   * </p>配置占位符与默认值之间的默认分隔符的对应配置项
    * @since 3.4.2
    */
   public static final String KEY_DEFAULT_VALUE_SEPARATOR = KEY_PREFIX + "default-value-separator";
 
-  private static final String ENABLE_DEFAULT_VALUE = "false";
-  private static final String DEFAULT_VALUE_SEPARATOR = ":";
+  private static final String ENABLE_DEFAULT_VALUE = "false";//默认情况下，关闭默认值功能
+  private static final String DEFAULT_VALUE_SEPARATOR = ":";//默认分隔符
 
   private PropertyParser() {
     // Prevent Instantiation
@@ -52,14 +52,16 @@ public class PropertyParser {
 
   public static String parse(String string, Properties variables) {
     VariableTokenHandler handler = new VariableTokenHandler(variables);
+    // 创建GenericTokenParser对象，并指定其处理的占位符格式为"${}"
     GenericTokenParser parser = new GenericTokenParser("${", "}", handler);
+    // 将默认值的处理委托给GenericTokenParser.parse方法
     return parser.parse(string);
   }
 
   private static class VariableTokenHandler implements TokenHandler {
-    private final Properties variables;
-    private final boolean enableDefaultValue;
-    private final String defaultValueSeparator;
+    private final Properties variables; // <properties>节点下定义的键值对，用于替换占位符
+    private final boolean enableDefaultValue;// 是否支持占位符中使用默认值的功能
+    private final String defaultValueSeparator;// 指定占位符与默认值之间的分隔符
 
     private VariableTokenHandler(Properties variables) {
       this.variables = variables;
@@ -75,18 +77,18 @@ public class PropertyParser {
     public String handleToken(String content) {
       if (variables != null) {
         String key = content;
-        if (enableDefaultValue) {
-          final int separatorIndex = content.indexOf(defaultValueSeparator);
+        if (enableDefaultValue) {// 检测是否支持占位符中使用默认值的功能
+          final int separatorIndex = content.indexOf(defaultValueSeparator);//查找分隔符
           String defaultValue = null;
           if (separatorIndex >= 0) {
-            key = content.substring(0, separatorIndex);
-            defaultValue = content.substring(separatorIndex + defaultValueSeparator.length());
+            key = content.substring(0, separatorIndex);// 获取占位符的名称
+            defaultValue = content.substring(separatorIndex + defaultValueSeparator.length());//获取默认值
           }
-          if (defaultValue != null) {
+          if (defaultValue != null) {// 查找指定的占位符
             return variables.getProperty(key, defaultValue);
           }
         }
-        if (variables.containsKey(key)) {
+        if (variables.containsKey(key)) {// 不支持默认值的功能，直接查找
           return variables.getProperty(key);
         }
       }

@@ -26,23 +26,24 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-/**
+/**对org.w3c.dom.Node对象做了封装和解析
  * @author Clinton Begin
  */
 public class XNode {
 
   private final Node node;
-  private final String name;
-  private final String body;
-  private final Properties attributes;
-  private final Properties variables;
-  private final XPathParser xpathParser;
+  private final String name; //node节点名称
+  private final String body; //节点的内容
+  private final Properties attributes;//节点属性集合
+  private final Properties variables;// mybatis-config.xml配置文件中的<properties>节点下定义的键值对
+  private final XPathParser xpathParser; //在XPathParser 中调用，传入this
 
   public XNode(XPathParser xpathParser, Node node, Properties variables) {
     this.xpathParser = xpathParser;
     this.node = node;
     this.name = node.getNodeName();
     this.variables = variables;
+    // 解析org.w3c.dom.Node对象中的信息，初始化attributes集合和body字段
     this.attributes = parseAttributes(node);
     this.body = parseBody(node);
   }
@@ -349,10 +350,11 @@ public class XNode {
 
   private Properties parseAttributes(Node n) {
     Properties attributes = new Properties();
-    NamedNodeMap attributeNodes = n.getAttributes();
+    NamedNodeMap attributeNodes = n.getAttributes();// 获取节点属性集合
     if (attributeNodes != null) {
       for (int i = 0; i < attributeNodes.getLength(); i++) {
         Node attribute = attributeNodes.item(i);
+        // 使用PropertyParser处理每个属性中的占位符
         String value = PropertyParser.parse(attribute.getNodeValue(), variables);
         attributes.put(attribute.getNodeName(), value);
       }
@@ -362,8 +364,8 @@ public class XNode {
 
   private String parseBody(Node node) {
     String data = getBodyData(node);
-    if (data == null) {
-      NodeList children = node.getChildNodes();
+    if (data == null) {// 当前节点不是文本节点
+      NodeList children = node.getChildNodes();// 处理子节点
       for (int i = 0; i < children.getLength(); i++) {
         Node child = children.item(i);
         data = getBodyData(child);
@@ -377,7 +379,7 @@ public class XNode {
 
   private String getBodyData(Node child) {
     if (child.getNodeType() == Node.CDATA_SECTION_NODE
-        || child.getNodeType() == Node.TEXT_NODE) {
+        || child.getNodeType() == Node.TEXT_NODE) { //只处理文本内容
       String data = ((CharacterData) child).getData();
       data = PropertyParser.parse(data, variables);
       return data;
