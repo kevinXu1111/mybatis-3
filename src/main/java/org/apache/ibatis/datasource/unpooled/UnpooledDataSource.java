@@ -47,10 +47,13 @@ public class UnpooledDataSource implements DataSource {
   private String password;
 
   private Boolean autoCommit;
-  private Integer defaultTransactionIsolationLevel;
+  private Integer defaultTransactionIsolationLevel;//事务隔离级别
 
   static {
+      // 每个驱动下有静态代码向DriverManager下CopyOnWriteArrayList集合注册jdbc驱动，这里是可以获取到的
+      // 具体参数com.mysql.jdbc.Driver类static块
     Enumeration<Driver> drivers = DriverManager.getDrivers();
+    // 将已经注册的JDBC Driver复制一份到 registeredDrivers 集合中
     while (drivers.hasMoreElements()) {
       Driver driver = drivers.nextElement();
       registeredDrivers.put(driver.getClass().getName(), driver);
@@ -197,14 +200,17 @@ public class UnpooledDataSource implements DataSource {
   }
 
   private Connection doGetConnection(Properties properties) throws SQLException {
+      //初始化数据库驱动
     initializeDriver();
+    // 创建数据库连接
     Connection connection = DriverManager.getConnection(url, properties);
+    // 配置数据库连接的autoCommit和隔离级别
     configureConnection(connection);
     return connection;
   }
 
   private synchronized void initializeDriver() throws SQLException {
-    if (!registeredDrivers.containsKey(driver)) {
+    if (!registeredDrivers.containsKey(driver)) {//检测驱动是否已注册
       Class<?> driverType;
       try {
         if (driverClassLoader != null) {
@@ -215,7 +221,9 @@ public class UnpooledDataSource implements DataSource {
         // DriverManager requires the driver to be loaded via the system ClassLoader.
         // http://www.kfu.com/~nsayer/Java/dyn-jdbc.html
         Driver driverInstance = (Driver)driverType.newInstance();
+        // 注册驱动，DriverProxy是内部类，是Driver的静态代理
         DriverManager.registerDriver(new DriverProxy(driverInstance));
+        // 将驱动添加到集合中
         registeredDrivers.put(driver, driverInstance);
       } catch (Exception e) {
         throw new SQLException("Error setting driver on UnpooledDataSource. Cause: " + e);
@@ -232,6 +240,7 @@ public class UnpooledDataSource implements DataSource {
     }
   }
 
+  // 静态代理
   private static class DriverProxy implements Driver {
     private Driver driver;
 

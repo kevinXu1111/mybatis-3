@@ -18,22 +18,32 @@ package org.apache.ibatis.datasource.pooled;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
+/**用于管理PooledConnection对象状态的组件，通过两个集合分别管理空闲状态和活跃状态的连接
  * @author Clinton Begin
  */
 public class PoolState {
 
   protected PooledDataSource dataSource;
-
+  /** 空闲PooledConnection集合*/
   protected final List<PooledConnection> idleConnections = new ArrayList<PooledConnection>();
+  /** 活跃PooledConnection集合*/
   protected final List<PooledConnection> activeConnections = new ArrayList<PooledConnection>();
+  /**请求连接的次数*/
   protected long requestCount = 0;
+  /**获取连接的累计时间*/
   protected long accumulatedRequestTime = 0;
+  /**checkoutTime表示应用从连接池中取出连接，到归还连接这段时长，
+  accumulatedCheckoutTime 记录了所有连接累计的checkoutTime时长*/
   protected long accumulatedCheckoutTime = 0;
+  /** 当连接长时间未归还给连接池时，会认为该连接超时。记录超时的连接个数*/
   protected long claimedOverdueConnectionCount = 0;
+  /** 累计超时时间*/
   protected long accumulatedCheckoutTimeOfOverdueConnections = 0;
+  /** 累计等待时间*/
   protected long accumulatedWaitTime = 0;
-  protected long hadToWaitCount = 0;
+  /** 等待次数*/
+  protected long hadToWaitCount = 0; 
+  /**无效的连接数*/
   protected long badConnectionCount = 0;
 
   public PoolState(PooledDataSource dataSource) {
